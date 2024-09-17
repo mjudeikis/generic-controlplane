@@ -46,6 +46,8 @@ type BatterySpec struct {
 }
 
 const (
+	// BatteryAll is the name of the all batteries.
+	BatteryAll Battery = "all"
 	// BatteryLeases is the name of the lease battery.
 	BatteryLeases Battery = "leases"
 	// BatteryAuthentication is the name of the authentication battery.
@@ -58,17 +60,24 @@ const (
 	BatteryFlowControl Battery = "flowcontrol"
 	// BatteryCRDs is the name of the CRD battery.
 	BatteryCRDs Battery = "crds"
+	// BatteryCertificates is the name of the certificates battery.
+	BatteryCertificates Battery = "certificates"
+	// BatteryAPIServices is the name of the API services battery.
+	BatteryAPIServices Battery = "apiservices"
 )
 
 var (
 	// The generic features.
 	defaultBatteries = map[Battery]BatterySpec{
+		BatteryAll:            {Enabled: false, GroupNames: []string{}},
 		BatteryLeases:         {Enabled: false, GroupNames: []string{"coordination.k8s.io"}},
 		BatteryAuthentication: {Enabled: false, GroupNames: []string{"authentication.k8s.io", "rbac.authentication.k8s.io"}},
 		BatteryAuthorization:  {Enabled: false, GroupNames: []string{"authorization.k8s.io", "rbac.authorization.k8s.io"}},
 		BatteryAdmission:      {Enabled: false, GroupNames: []string{"admissionregistration.k8s.io"}},
 		BatteryFlowControl:    {Enabled: false, GroupNames: []string{"flowcontrol.apiserver.k8s.io"}},
 		BatteryCRDs:           {Enabled: false, GroupNames: []string{"apiextensions.k8s.io"}},
+		BatteryCertificates:   {Enabled: false, GroupNames: []string{"certificates.k8s.io"}},
+		BatteryAPIServices:    {Enabled: false, GroupNames: []string{"apiregistration.k8s.io"}},
 	}
 )
 
@@ -90,6 +99,12 @@ func (b Batteries) Enable(name Battery) {
 	_b := b.list[name]
 	_b.Enabled = true
 	b.list[name] = _b
+}
+
+func (b Batteries) EnableAll() {
+	for name := range b.list {
+		b.Enable(name)
+	}
 }
 
 func (b Batteries) Disable(name Battery) {

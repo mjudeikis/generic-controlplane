@@ -36,12 +36,14 @@ func (s *Batteries) AddFlags(fs *pflag.FlagSet) {
 }
 
 func (b Batteries) Complete() {
-	// Ensure all some related configuration are configured
-
 	for _, name := range b.BatteriesArgs {
 		if _, ok := b.list[Battery(name)]; ok {
 			b.Enable(Battery(name))
 		}
+	}
+
+	if b.IsEnabled(BatteryAll) {
+		b.EnableAll()
 	}
 
 	// If lease is disabled, we disable APIServerIdentity
@@ -53,7 +55,6 @@ func (b Batteries) Complete() {
 func (b Batteries) Validate() []error {
 	var errs []error
 	for _, name := range b.BatteriesArgs {
-		fmt.Println(name)
 		if _, ok := b.list[Battery(name)]; !ok {
 			errs = append(errs, fmt.Errorf("invalid battery %q", name))
 		}

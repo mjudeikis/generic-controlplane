@@ -47,7 +47,7 @@ Batteries:
 - `flowcontrol` - Kubernetes native flow control using `flowcontrol.apiserver.k8s.io`
 
 
-When starting server without any flags, in-memory storage will be used and batteries will be disabled by default.
+When starting server without any flags, local in-memory etcd will be used and batteries will be disabled by default.
 
 Important: In the long run, we plan to move existing apis into batteries on its own, and make default server to be a simple server without any resources.
 

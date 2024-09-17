@@ -26,6 +26,7 @@ import (
 	"github.com/kcp-dev/kcp/pkg/embeddedetcd"
 	"github.com/spf13/cobra"
 
+	apiextensionapiserver "k8s.io/apiextensions-apiserver/pkg/apiserver"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	_ "k8s.io/apiserver/pkg/admission" // for admission plugins
@@ -38,8 +39,6 @@ import (
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/component-base/cli/globalflag"
 	"k8s.io/component-base/logs"
-
-	apiextensionapiserver "k8s.io/apiextensions-apiserver/pkg/apiserver"
 	logsapi "k8s.io/component-base/logs/api/v1"
 	_ "k8s.io/component-base/metrics/prometheus/workqueue" // for workqueue metrics
 	"k8s.io/component-base/term"
