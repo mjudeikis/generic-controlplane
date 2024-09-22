@@ -45,6 +45,7 @@ Batteries:
 - `authorization` - Kubernetes native authorization using `authorization.k8s.io`
 - `admission` - Kubernetes native admission using `admissionregistration.k8s.io`
 - `flowcontrol` - Kubernetes native flow control using `flowcontrol.apiserver.k8s.io`
+- `apiservices` - Kubernetes native API services using `apiregistration.k8s.io`
 
 
 When starting server without any flags, local in-memory etcd will be used and batteries will be disabled by default.
