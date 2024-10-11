@@ -65,3 +65,7 @@ replace k8s.io/sample-apiserver => ../../kubernetes/kubernetes/staging/src/k8s.i
 replace k8s.io/sample-cli-plugin => ../../kubernetes/kubernetes/staging/src/k8s.io/sample-cli-plugin
 
 replace k8s.io/sample-controller => ../../kubernetes/kubernetes/staging/src/k8s.io/sample-controller
+
+use (
+	../../kubernetes/kube-openapi
+	)

@@ -24,11 +24,11 @@ import (
 	"path/filepath"
 
 	etcdoptions "github.com/kcp-dev/kcp/pkg/embeddedetcd/options"
-	"k8s.io/client-go/informers"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/admission"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/util/keyutil"
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/klog/v2"
@@ -110,6 +110,8 @@ func NewOptions(rootDir string) *Options {
 	o.GenericControlPlane.Authentication.ServiceAccounts.Issuers = []string{"https://gcp.default.svc"}
 	o.GenericControlPlane.Etcd.StorageConfig.Transport.ServerList = []string{"embedded"}
 	o.GenericControlPlane.Features.EnablePriorityAndFairness = false
+
+	//o.GenericControlPlane.Authorization.Modes = []string{"RBAC"}
 	// turn on the watch cache
 	o.GenericControlPlane.Etcd.EnableWatchCache = true
 
@@ -143,7 +145,10 @@ func (o *Options) Complete() (*CompletedOptions, error) {
 	o.Extra.Batteries.Complete()
 
 	var serviceAccountFile string
-	if len(o.GenericControlPlane.Authentication.ServiceAccounts.KeyFiles) == 0 {
+	if o.GenericControlPlane.Authentication == nil {
+		o.GenericControlPlane.Authentication = kubeoptions.NewBuiltInAuthenticationOptions()
+	}
+	if o.GenericControlPlane.Authentication.ServiceAccounts != nil && len(o.GenericControlPlane.Authentication.ServiceAccounts.KeyFiles) == 0 {
 		// use sa.key and auto-generate if not existing
 		serviceAccountFile = filepath.Join(o.Extra.RootDir, "sa.key")
 		if _, err := os.Stat(serviceAccountFile); os.IsNotExist(err) {

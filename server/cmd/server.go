@@ -46,6 +46,7 @@ import (
 	"k8s.io/component-base/version/verflag"
 	"k8s.io/klog/v2"
 	aggregatorapiserver "k8s.io/kube-aggregator/pkg/apiserver"
+	"k8s.io/kube-aggregator/pkg/apiserver/miniaggregator"
 	controlplaneapiserver "k8s.io/kubernetes/pkg/controlplane/apiserver"
 	_ "k8s.io/kubernetes/pkg/features" // add the kubernetes feature gates
 
@@ -195,12 +196,7 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 		}
 	}
 
-	server, err := createServerChain(completed)
-	if err != nil {
-		return err
-	}
-
-	prepared, err := server.PrepareRun()
+	runner, err := createServerChain(completed)
 	if err != nil {
 		return err
 	}
@@ -212,9 +208,8 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 	}
 
 	// Run the server and wait for readiness
-
 	go func() {
-		if err := prepared.RunWithContext(ctx); err != nil {
+		if err := runner(ctx); err != nil {
 			klog.Fatal(err, "Failed to run server")
 		}
 	}()
@@ -231,14 +226,16 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 	return nil
 }
 
+type runnableFunc func(ctx context.Context) error
+
 // createServerChain creates the apiservers connected via delegation.
-func createServerChain(config options.CompletedConfig) (aggregatorapiserver.APIAggregator, error) {
+func createServerChain(config options.CompletedConfig) (runnableFunc, error) {
 	// 1. Basic not found handler
 	notFoundHandler := notfoundhandler.New(config.ControlPlane.Generic.Serializer, genericapifilters.NoMuxAndDiscoveryIncompleteKey)
 
 	// TODO: we can use single variable here with cleaner logic bellow.
-	var aggregatorServer aggregatorapiserver.APIAggregator
-	var miniAggregatorServer aggregatorapiserver.APIAggregator
+	var aggregatorServer *aggregatorapiserver.APIAggregator
+	var miniAggregatorServer *miniaggregator.MiniAPIAggregator
 
 	var apiExtensionsServer *apiextensionapiserver.CustomResourceDefinitions
 	var nativeAPIs *controlplaneapiserver.Server
@@ -291,22 +288,22 @@ func createServerChain(config options.CompletedConfig) (aggregatorapiserver.APIA
 			nativeAPIs.GenericAPIServer,
 			apiExtensionsServer.Informers.Apiextensions().V1().CustomResourceDefinitions(),
 			false,
-			controlplaneapiserver.DefaultGenericAPIServicePriorities())
+			miniaggregator.DefaultGenericAPIServicePriorities())
 		if err != nil {
 			return nil, fmt.Errorf("failed to create kube-aggregator: %w", err)
 		}
-		miniAggregatorServer, err = config.MiniAggregator.New(nativeAPIs.GenericAPIServer, nativeAPIs, apiExtensionsServer)
+		miniAggregatorServer, err = config.MiniAggregator.NewWithDelegate(nativeAPIs.GenericAPIServer, apiExtensionsServer.DiscoveryGroupLister)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create mini-aggregator: %w", err)
 		}
 
 	} else {
 		klog.Info("CRDs are disabled, skipping api-extension server")
-		aggregatorServer, err = controlplaneapiserver.CreateAggregatorServer(config.Aggregator, nativeAPIs.GenericAPIServer, nil, false, controlplaneapiserver.DefaultGenericAPIServicePriorities())
+		aggregatorServer, err = controlplaneapiserver.CreateAggregatorServer(config.Aggregator, nativeAPIs.GenericAPIServer, nil, false, miniaggregator.DefaultGenericAPIServicePriorities())
 		if err != nil {
 			return nil, fmt.Errorf("failed to create kube-aggregator: %w", err)
 		}
-		miniAggregatorServer, err = config.MiniAggregator.New(nativeAPIs.GenericAPIServer, nativeAPIs, nil)
+		miniAggregatorServer, err = config.MiniAggregator.NewWithDelegate(nativeAPIs.GenericAPIServer, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create mini-aggregator: %w", err)
 		}
@@ -319,9 +316,23 @@ func createServerChain(config options.CompletedConfig) (aggregatorapiserver.APIA
 	// 4. Based on if we need APIServices or not return right server
 	if config.Batteries.IsEnabled(batteries.BatteryAPIServices) {
 		klog.Info("Using aggregator server")
-		return aggregatorServer, nil
+		prep, err := aggregatorServer.PrepareRun()
+		if err != nil {
+			return nil, fmt.Errorf("failed to prepare aggregator server: %w", err)
+		}
+		f := func(ctx context.Context) error {
+			return prep.Run(ctx)
+		}
+		return f, nil
 	} else {
 		klog.Info("Using mini-aggregator server")
-		return miniAggregatorServer, nil
+		prep, err := miniAggregatorServer.PrepareRun()
+		if err != nil {
+			return nil, fmt.Errorf("failed to prepare mini-aggregator server: %w", err)
+		}
+		f := func(ctx context.Context) error {
+			return prep.RunWithContext(ctx)
+		}
+		return f, nil
 	}
 }

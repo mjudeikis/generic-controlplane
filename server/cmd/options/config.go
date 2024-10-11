@@ -29,8 +29,8 @@ import (
 	controlplaneapiserver "k8s.io/kubernetes/pkg/controlplane/apiserver"
 	generatedopenapi "k8s.io/kubernetes/pkg/generated/openapi"
 
-	miniaggregator "github.com/kcp-dev/generic-controlplane/server/aggregator"
 	"github.com/kcp-dev/generic-controlplane/server/batteries"
+	"k8s.io/kube-aggregator/pkg/apiserver/miniaggregator"
 )
 
 // Config holds the configuration for the generic controlplane server.
@@ -39,7 +39,7 @@ type Config struct {
 
 	EmbeddedEtcd   *embeddedetcd.Config
 	Aggregator     *aggregatorapiserver.Config
-	MiniAggregator *miniaggregator.MiniAggregatorConfig
+	MiniAggregator *miniaggregator.Config
 	ControlPlane   *controlplaneapiserver.Config
 	APIExtensions  *apiextensionsapiserver.Config
 
@@ -62,7 +62,7 @@ type completedConfig struct {
 	// Aggregator is native k8s aggregator server with all its bells and whistles.
 	Aggregator aggregatorapiserver.CompletedConfig
 	// MiniAggregator is a stripped down version of the aggregator server.
-	MiniAggregator miniaggregator.CompletedMiniAggregatorConfig
+	MiniAggregator miniaggregator.CompletedConfig
 	ControlPlane   controlplaneapiserver.CompletedConfig
 	APIExtensions  apiextensionsapiserver.CompletedConfig
 
@@ -151,8 +151,8 @@ func NewConfig(opts CompletedOptions) (*Config, error) {
 	c.Aggregator = kubeAggregator
 
 	// setup mini-aggregator
-	miniAggregator := miniaggregator.MiniAggregatorConfig{
-		GenericConfig: *genericConfig,
+	miniAggregator := miniaggregator.Config{
+		GenericConfig: genericConfig,
 	}
 	c.MiniAggregator = &miniAggregator
 

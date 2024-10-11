@@ -64,6 +64,8 @@ const (
 	BatteryCertificates Battery = "certificates"
 	// BatteryAPIServices is the name of the API services battery.
 	BatteryAPIServices Battery = "apiservices"
+	// EventsAPI is the name of the events API battery.
+	BatteryEventsAPI Battery = "events"
 )
 
 var (
@@ -78,6 +80,7 @@ var (
 		BatteryCRDs:           {Enabled: false, GroupNames: []string{"apiextensions.k8s.io"}},
 		BatteryCertificates:   {Enabled: false, GroupNames: []string{"certificates.k8s.io"}},
 		BatteryAPIServices:    {Enabled: false, GroupNames: []string{"apiregistration.k8s.io"}},
+		BatteryEventsAPI:      {Enabled: false, GroupNames: []string{"events.k8s.io"}},
 	}
 )
 
